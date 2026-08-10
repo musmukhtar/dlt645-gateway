@@ -76,31 +76,31 @@ typedef enum {
 } DLT645_Result;
 
 /*----------------------------------------------------------------------
- *  Output of the frame layer.  payload points into the UNMASKED scratch
- *  buffer the caller supplied to dlt645_parse_frame(); it is valid only
- *  while that buffer is alive and unmodified.
+ *  Output of the frame layer.  It owns its own storage: the unmasked data
+ *  field is written into `data`, and `payload` points into it.  So the
+ *  struct is self-contained -- valid until the next parse reuses it, with
+ *  no separate scratch buffer for the caller to manage.
  *--------------------------------------------------------------------*/
 typedef struct {
     bool           is_response;           /* control D7: false=request, true=reply */
     uint8_t        address[DLT645_ADDR_LEN]; /* raw BCD, LE on the wire  */
     uint16_t       di;                    /* 0xE001 or 0xE002            */
-    const uint8_t *payload;               /* unmasked, after the 2 DI bytes */
+    const uint8_t *payload;               /* -> data + 2 (after the DI)  */
     uint8_t        payload_len;           /* = L - 2                     */
+    uint8_t        data[DLT645_DATA_MAX]; /* the unmasked data field     */
 } DLT645_Frame_Info;
 
 /*----------------------------------------------------------------------
  *  Parse + validate + unmask one frame.
  *
  *  buf/len : the raw frame as received (READ-ONLY, not modified).
- *  scratch : caller-owned buffer, at least `len` bytes, where the -0x33
- *            unmasked data is written; out->payload points into it.
+ *  out     : filled in; owns the unmasked data (see DLT645_Frame_Info).
  *
  *  Steps, in order: length, buf[0]==0x68, buf[7]==0x68, computed stop
  *  byte, checksum, then unmask and split the DI.  Every access is bounded
  *  against len.
  *--------------------------------------------------------------------*/
 DLT645_Result dlt645_parse_frame(const uint8_t *buf, size_t len,
-                                 uint8_t *scratch, size_t scratch_len,
                                  DLT645_Frame_Info *out);
 
 /* Convenience: DL/T 645 checksum over buf[0..n-1], low 8 bits. */

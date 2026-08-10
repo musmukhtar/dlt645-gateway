@@ -9,7 +9,7 @@
  *     to compute every position, then check the byte is there.
  *   - NEVER trust L before bounds-checking 10 + L + 2 against the buffer.
  *   - the checksum is the real proof of a genuine frame.
- *   - buf is READ-ONLY; the -0x33 unmask is written into caller scratch.
+ *   - buf is READ-ONLY; the -0x33 unmask is written into out->data.
  *====================================================================*/
 
 #include "dlt645.h"
@@ -24,10 +24,9 @@ uint8_t dlt645_checksum(const uint8_t *buf, size_t n)
 }
 
 DLT645_Result dlt645_parse_frame(const uint8_t *buf, size_t len,
-                                 uint8_t *scratch, size_t scratch_len,
                                  DLT645_Frame_Info *out)
 {
-    if (buf == NULL || scratch == NULL || out == NULL) {
+    if (buf == NULL || out == NULL) {
         return DLT645_ERR_NULL;
     }
 
@@ -66,10 +65,6 @@ DLT645_Result dlt645_parse_frame(const uint8_t *buf, size_t len,
 
     /* --- frame is genuine; now read the contents --- */
 
-    if ((size_t)L > scratch_len) {
-        return DLT645_ERR_BAD_LENGTH;   /* scratch too small for the data */
-    }
-
     /* step 7: address (raw BCD, not masked) */
     for (int i = 0; i < DLT645_ADDR_LEN; i++) {
         out->address[i] = buf[DLT645_OFF_ADDR + i];
@@ -79,16 +74,16 @@ DLT645_Result dlt645_parse_frame(const uint8_t *buf, size_t len,
        The other bits are always 0 on this meter (see dlt645.h). */
     out->is_response = (buf[DLT645_OFF_CONTROL] & DLT645_CONTROL_RESPONSE_BYTE) != 0;
 
-    /* step 8: unmask the data field into scratch (-0x33) */
+    /* step 8: unmask the data field into out->data (-0x33) */
     for (uint8_t i = 0; i < L; i++) {
-        scratch[i] = (uint8_t)(buf[DLT645_OFF_DATA + i] - DLT645_DATA_MASK);
+        out->data[i] = (uint8_t)(buf[DLT645_OFF_DATA + i] - DLT645_DATA_MASK);
     }
 
     /* step 9: DI = data[1]<<8 | data[0]  (low byte first) */
-    out->di = (uint16_t)((scratch[1] << 8) | scratch[0]);
+    out->di = (uint16_t)((out->data[1] << 8) | out->data[0]);
 
     /* step 10: hand the payload (after the 2 DI bytes) to the vendor layer */
-    out->payload     = scratch + 2;
+    out->payload     = out->data + 2;
     out->payload_len = (uint8_t)(L - 2);
 
     return DLT645_OK;

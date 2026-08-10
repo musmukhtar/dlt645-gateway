@@ -121,7 +121,7 @@ typedef struct {
     bool             has_datetime;
     DLT645_DateTime  datetime;
 
-    const uint8_t *raw;        /* value bytes, into the caller scratch  */
+    const uint8_t *raw;        /* value bytes, into the frame's data buf */
     uint8_t        raw_len;
 
     bool         has_trailer;

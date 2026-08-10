@@ -12,11 +12,6 @@
 #include "dlt645_sanxing.h"
 #include <string.h>
 
-/* Scratch for the -0x33 unmask.  The interface buffer is read-only, so the
-   mutation happens here, never in the caller's bytes.  One meter, one
-   in-flight frame, so a single static buffer is fine (not reentrant). */
-static uint8_t g_scratch[DLT645_FRAME_MAX];
-
 /*----------------------------------------------------------------------
  *  identify: the one-time bind-probe.  Accept only a complete, checksum-
  *  valid DL/T 645 frame.  Read-only on buf.
@@ -70,9 +65,11 @@ static gw_result_t sanxing_decode(const uint8_t *buf, size_t len,
 {
     *count = 0;
 
-    DLT645_Frame_Info fi;
-    DLT645_Result fr = dlt645_parse_frame(buf, len, g_scratch,
-                                          sizeof(g_scratch), &fi);
+    /* fi owns the unmask buffer.  One meter, one in-flight frame, so a
+       single static instance is fine (not reentrant); the readings' raw
+       pointers stay valid until the next decode. */
+    static DLT645_Frame_Info fi;
+    DLT645_Result fr = dlt645_parse_frame(buf, len, &fi);
     if (fr != DLT645_OK) {
         return GW_ERR_BAD_FRAME;
     }
