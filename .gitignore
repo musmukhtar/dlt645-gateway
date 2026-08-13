@@ -1,0 +1,14 @@
+# build output
+test_sanxing
+demo
+*.o
+*.a
+*.d
+
+# editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
