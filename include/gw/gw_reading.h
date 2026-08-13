@@ -4,18 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/*======================================================================
- *  gw_reading.h  --  the protocol-neutral reading model.
- *
- *  Every meter driver (Sanxing today, Conlog later) maps its own decoded
- *  values into this one struct.  The gateway core above never names a
- *  brand: it consumes gw_reading_t and does not care where it came from.
- *
- *  One frame produces 1..N readings.  A Sanxing long reply, for example,
- *  yields the main reading PLUS the trailer's balance and total energy
- *  as two more readings.  So the model is already multi-value, which is
- *  the shape a second protocol will also need.
- *====================================================================*/
+/* Protocol-neutral reading model.  Every driver maps its decoded values
+   into this struct; nothing above the drivers names a brand.
+
+   One frame produces 1..N readings.  A Sanxing long reply yields the main
+   reading plus the trailer's balance and total energy. */
 
 /* Which brand produced the reading. */
 typedef enum {
@@ -24,8 +17,8 @@ typedef enum {
     GW_PROTO_CONLOG          /* reserved, not yet implemented */
 } gw_protocol_t;
 
-/* Brand-neutral quantity.  Each driver maps its native data items onto
-   these so "voltage" means the same thing regardless of meter brand. */
+/* Each driver maps its native data items onto these, so "voltage" means
+   the same thing whatever the brand. */
 typedef enum {
     GW_Q_UNKNOWN = 0,
     GW_Q_VOLTAGE,
@@ -77,7 +70,7 @@ typedef struct {
     char                text[GW_READING_TEXT_MAX];
 
     /* raw value bytes, for containers and debugging.  Points into the
-       decoding driver's scratch buffer; valid only until the next decode. */
+       driver's scratch buffer and is valid only until the next decode. */
     const uint8_t      *raw;
     uint8_t             raw_len;
 } gw_reading_t;

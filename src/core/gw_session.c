@@ -1,16 +1,10 @@
-/*======================================================================
- *  gw_session.c  --  driver registry + bind-once selection + decode.
- *
- *  One gateway talks to one meter, so we choose a driver once (by config
- *  or a single auto-probe) and route every frame through it.  No per-frame
- *  protocol demux.
- *====================================================================*/
+/* Driver registry, bind-once selection, and dispatch. */
 
-#include "gw_protocol.h"
-#include "gw_drivers.h"   /* extern decls give the objects external linkage */
+#include "gw/gw_protocol.h"
+#include "gw/gw_registry.h"   /* extern decls give the objects external linkage */
 
-/* The registry.  Adding a brand = add its driver object here (and link
-   its .c file).  Order matters only for auto-probe tie-breaks. */
+/* Adding a brand means adding its object here and linking its .c file.
+   Order only matters for auto-probe tie-breaks. */
 static const gw_driver_t *const g_drivers[] = {
     &sanxing_driver,
     &conlog_driver,
